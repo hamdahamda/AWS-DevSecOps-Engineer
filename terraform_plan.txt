@@ -1,0 +1,202 @@
+S E:\aws-devsecops-infra\environments\dev> terraform plan
+module.ecs.aws_ecs_cluster.this: Refreshing state... [id=arn:aws:ecs:ap-southeast-1:590184049466:cluster/myapp-cluster]
+module.vpc.aws_vpc.main: Refreshing state... [id=vpc-014d0f0118cf7aa04]
+module.vpc.aws_subnet.public: Refreshing state... [id=subnet-0191777f0aa024fbd]
+module.vpc.aws_internet_gateway.igw: Refreshing state... [id=igw-0a7a0181f9775dd70]
+module.vpc.aws_subnet.private: Refreshing state... [id=subnet-0e1cd4ee8c90dc900]
+aws_security_group.app_sg: Refreshing state... [id=sg-0bda8ef7b722114e6]
+module.vpc.aws_route_table.public: Refreshing state... [id=rtb-07816a164d9bdfc6f]
+module.vpc.aws_route_table_association.public: Refreshing state... [id=rtbassoc-0bc85611cc88e3630]
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # module.codebuild.aws_codebuild_project.this will be created
+  + resource "aws_codebuild_project" "this" {
+      + arn                  = (known after apply)
+      + badge_enabled        = false
+      + badge_url            = (known after apply)
+      + build_timeout        = 60
+      + description          = "CodeBuild project for myapp"
+      + encryption_key       = (known after apply)
+      + id                   = (known after apply)
+      + name                 = "myapp-build"
+      + project_visibility   = "PRIVATE"
+      + public_project_alias = (known after apply)
+      + queued_timeout       = 480
+      + region               = "ap-southeast-1"
+      + service_role         = "arn:aws:iam::123456789012:role/codebuild-role"
+      + tags_all             = (known after apply)
+
+      + artifacts {
+          + encryption_disabled    = false
+          + override_artifact_name = false
+          + type                   = "NO_ARTIFACTS"
+        }
+
+      + environment {
+          + compute_type                = "BUILD_GENERAL1_SMALL"
+          + image                       = "aws/codebuild/standard:6.0"
+          + image_pull_credentials_type = "CODEBUILD"
+          + privileged_mode             = true
+          + type                        = "LINUX_CONTAINER"
+        }
+
+      + source {
+          + buildspec = "buildspec.yml"
+          + location  = "https://github.com/user/repo"
+          + type      = "GITHUB"
+        }
+    }
+
+  # module.codepipeline.aws_codepipeline.this will be created
+  + resource "aws_codepipeline" "this" {
+      + arn            = (known after apply)
+      + execution_mode = "SUPERSEDED"
+      + id             = (known after apply)
+      + name           = "myapp-pipeline"
+      + pipeline_type  = "V1"
+      + region         = "ap-southeast-1"
+      + role_arn       = "arn:aws:iam::123456789012:role/codepipeline-role"
+      + tags_all       = (known after apply)
+      + trigger_all    = (known after apply)
+
+      + artifact_store {
+          + location = "myapp-artifacts-bucket"
+          + type     = "S3"
+            # (1 unchanged attribute hidden)
+        }
+
+      + stage {
+          + name = "Source"
+
+          + action {
+              + category         = "Source"
+              + configuration    = {
+                  + "Branch"     = "main"
+                  + "OAuthToken" = "ghp_********"
+                  + "Owner"      = "user"
+                  + "Repo"       = "repo"
+                }
+              + name             = "SourceAction"
+              + output_artifacts = [
+                  + "source_output",
+                ]
+              + owner            = "ThirdParty"
+              + provider         = "GitHub"
+              + region           = (known after apply)
+              + run_order        = (known after apply)
+              + version          = "1"
+            }
+        }
+      + stage {
+          + name = "Build"
+
+          + action {
+              + category         = "Build"
+              + configuration    = {
+                  + "ProjectName" = "myapp-build"
+                }
+              + input_artifacts  = [
+                  + "source_output",
+                ]
+              + name             = "BuildAction"
+              + output_artifacts = [
+                  + "build_output",
+                ]
+              + owner            = "AWS"
+              + provider         = "CodeBuild"
+              + region           = (known after apply)
+              + run_order        = (known after apply)
+              + version          = "1"
+            }
+        }
+    }
+
+  # module.ecs.aws_ecs_service.this will be created
+  + resource "aws_ecs_service" "this" {
+      + arn                                = (known after apply)
+      + availability_zone_rebalancing      = "DISABLED"
+      + cluster                            = "arn:aws:ecs:ap-southeast-1:590184049466:cluster/myapp-cluster"
+      + deployment_maximum_percent         = 200
+      + deployment_minimum_healthy_percent = 100
+      + desired_count                      = 1
+      + enable_ecs_managed_tags            = false
+      + enable_execute_command             = false
+      + iam_role                           = (known after apply)
+      + id                                 = (known after apply)
+      + launch_type                        = "FARGATE"
+      + name                               = "myapp-service"
+      + platform_version                   = (known after apply)
+      + region                             = "ap-southeast-1"
+      + scheduling_strategy                = "REPLICA"
+      + tags_all                           = (known after apply)
+      + task_definition                    = (known after apply)
+      + triggers                           = (known after apply)
+      + wait_for_steady_state              = false
+
+      + network_configuration {
+          + assign_public_ip = true
+          + security_groups  = [
+              + "sg-0bda8ef7b722114e6",
+            ]
+          + subnets          = [
+              + "subnet-0191777f0aa024fbd",
+            ]
+        }
+    }
+
+  # module.ecs.aws_ecs_task_definition.app will be created
+  + resource "aws_ecs_task_definition" "app" {
+      + arn                      = (known after apply)
+      + arn_without_revision     = (known after apply)
+      + container_definitions    = jsonencode(
+            [
+              + {
+                  + essential    = true
+                  + image        = "my-ecr-image-url"
+                  + name         = "myapp"
+                  + portMappings = [
+                      + {
+                          + containerPort = 80
+                          + hostPort      = 80
+                        },
+                    ]
+                },
+            ]
+        )
+      + cpu                      = "256"
+      + enable_fault_injection   = (known after apply)
+      + execution_role_arn       = "arn:aws:iam::123456789012:role/ecs-task-execution"
+      + family                   = "myapp-task"
+      + id                       = (known after apply)
+      + memory                   = "512"
+      + network_mode             = "awsvpc"
+      + region                   = "ap-southeast-1"
+      + requires_compatibilities = [
+          + "FARGATE",
+        ]
+      + revision                 = (known after apply)
+      + skip_destroy             = false
+      + tags_all                 = (known after apply)
+      + track_latest             = false
+    }
+
+Plan: 4 to add, 0 to change, 0 to destroy.
+╷
+│ Warning: The CodePipeline GitHub version 1 action provider is no longer recommended.
+│
+│   with module.codepipeline.aws_codepipeline.this,
+│   on ..\..\modules\codepipeline\main.tf line 16, in resource "aws_codepipeline" "this":
+│   16:       provider         = "GitHub"
+│
+│ Use a GitHub version 2 action (with a CodeStar Connection `aws_codestarconnections_connection`) as recommended instead. See
+│ https://docs.aws.amazon.com/codepipeline/latest/userguide/update-github-action-connections.html
+╵
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
+
+Note: You didn't use the -out option to save this plan, so Terraform can't guarantee to take exactly these actions if you run "terraform apply" now.
+PS E:\aws-devsecops-infra\environments\dev> 
