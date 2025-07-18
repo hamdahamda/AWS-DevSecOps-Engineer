@@ -34,7 +34,7 @@ aws-devsecops-infra/
     cd environments/dev
     terraform init
 
-3️⃣ Rencanakan Infrastuktur
+3️⃣ Check Infrastuktur
     terraform plan
 
 4️⃣ Deploy ke AWS
