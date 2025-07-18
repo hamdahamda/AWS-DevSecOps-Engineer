@@ -41,7 +41,7 @@ aws-devsecops-infra/
     terraform apply
 
 🧩 Diagram Arsitektur
-Lihat di diagram/architecture.png
+Lihat di diagram/Diagram.png
 
 📌 Asumsi dan Batasan
     - IAM Role & Bucket harus sudah tersedia atau didefinisikan sendiri
